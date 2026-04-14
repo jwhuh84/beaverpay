@@ -1678,7 +1678,7 @@ window._IMG_DUSIGI = "iVBORw0KGgoAAAANSUhEUgAAAMkAAAD7CAIAAABPFif0AAAAAXNSR0IArs
 /* ════════════════════════════════
    전역 상태
 ════════════════════════════════ */
-let DB_USERS = [];
+let DB_USERS = JSON.parse(localStorage.getItem('bp_users') || '[]');
 const ADDRS = [
   {zip:'06787', addr:'서울 서초구 강남대로6길 12'},
   {zip:'04524', addr:'서울 중구 세종대로 110'},
@@ -1734,20 +1734,19 @@ let TEST_CFG = {
 // 앱 로드 시 설정값 불러오기
 async function loadConfig() {
   try {
+    // 구글시트 가입자 목록 로드 → DB_USERS 갱신
+    try {
+      const uRes = await fetch(GAS_URL + '?action=getUsers');
+      const uJson = await uRes.json();
+      if (uJson.status === 'ok' && Array.isArray(uJson.users) && uJson.users.length > 0) {
+        DB_USERS = uJson.users;
+        localStorage.setItem('bp_users', JSON.stringify(DB_USERS));
+      }
+    } catch(ue) { /* 실패 시 localStorage 유지 */ }
+
     const res = await fetch(GAS_URL);
     const json = await res.json();
     if (json.status !== 'ok') return;
-    // 테스트 설정값 적용
-    if (json.testConfig && Object.keys(json.testConfig).length > 0) {
-      Object.assign(TEST_CFG, json.testConfig);
-      // 로그인 계정 재구성
-      if (json.testConfig.login_users) {
-        DB_USERS = json.testConfig.login_users.split(',').map(u => {
-          const [name, phone] = u.split('/');
-          return { name: (name||'').trim(), phone: (phone||'').trim() };
-        });
-      }
-    }
     const c = json.config;
     // 홈 카드 설정값 반영
     if (c.directFee)        HOME_CARDS[0].info = `이용가능기간 : ${getDirectPeriod()}<br>수수료 ${c.directFee}% / 정산주기 ${c.directSettlement || 'D+5'}`;
@@ -2324,6 +2323,7 @@ function doAuth() {
       status: '가입신청'
     });
     DB_USERS.push({ name: S.nameKr, phone: digits(S.phone || '') });
+    localStorage.setItem('bp_users', JSON.stringify(DB_USERS));
     go('scr-complete');
   }, 900);
 }
@@ -2666,6 +2666,7 @@ function checkBizSmsBtn() {
 function sendBizOTP() {
   const v = digits($('biz-sms-phone').value);
   if (v.length !== 11) { toast('휴대폰번호 11자리를 입력해 주세요.'); return; }
+  S.bizSmsPhone = v;
   $('W-biz-otp').style.display = '';
   bizOtpTry = 0; bizOtpExpired = false;
   startBizOtpTimer();
@@ -2794,6 +2795,7 @@ function doBizAuth() {
       status: '가입신청'
     });
     DB_USERS.push({ name: S.bizRepNameKr, phone: digits(S.bizSmsPhone || '') });
+    localStorage.setItem('bp_users', JSON.stringify(DB_USERS));
     setupBizComplete(); go('scr-biz-complete');
   }, 900);
 }

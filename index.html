@@ -1874,16 +1874,18 @@ function doLogin() {
   if (!phone) { setE('R-ln-phone','E-ln-phone',true); ok=false; } else clrE('R-ln-phone','E-ln-phone');
   if (!ok) return;
 
-  // input 단계: 사용자 확인 후 OTP 발송
-  // otp 단계: onOtpKey()에서 6자리 즉시 자동 검증 (정책서 DOC-06)
   if (lnPhase === 'input') {
+    // input 단계: 사용자 확인 후 OTP 발송
     const user = DB_USERS.find(u => u.name===name && u.phone===phone);
-    if (!user) {
-      toast('[디버그] DB:' + DB_USERS.length + '명 / 입력:' + name + '/' + phone + (DB_USERS.length ? ' / 첫번째:' + DB_USERS[0].name + '/' + DB_USERS[0].phone : ''));
-      setTimeout(function(){ openDim('M-nouser'); }, 3000);
-      return;
-    }
+    if (!user) { openDim('M-nouser'); return; }
     lnSendOTP();
+  } else if (lnPhase === 'otp') {
+    // otp 단계: 버튼 누르면 검증 시도
+    onOtpKey();
+  } else if (lnPhase === 'verified') {
+    // verified 단계: 인증 완료 후 로그인 버튼 → 홈 이동
+    setupHome($('I-ln-name').value.trim());
+    go('scr-home');
   }
 }
 
@@ -1957,8 +1959,9 @@ function onOtpKey() {
   }
   if (el.value === TEST_CFG.otp) {
     clearInterval(lnTimerID); clearInterval(lnCoolID);
-    toast('인증 완료!');
-    setTimeout(() => { setupHome($('I-ln-name').value.trim()); go('scr-home'); }, 900);
+    lnPhase = 'verified';
+    clrE('R-ln-otp', 'E-ln-otp');
+    toast('인증 완료! 로그인 버튼을 눌러주세요.');
   } else {
     lnOtpTry++;
     if (lnOtpTry >= 5) { openDim('M-exceed'); return; }

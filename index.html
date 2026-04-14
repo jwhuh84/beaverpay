@@ -2344,6 +2344,11 @@ function goAccNext() {
   if (!S.bank)  { setE('R-bank','E-bank',true);       return; }
   if (!num)     { setE('R-acc-num','E-acc-num',true);   return; }
   if (!owner)   { setE('R-acc-owner','E-acc-owner',true); return; }
+  if (S.nameKr && owner !== S.nameKr) {
+    $('E-acc-owner').querySelector('span').textContent = '사용자명과 예금주가 일치하지 않아요.';
+    setE('R-acc-owner','E-acc-owner',true); return;
+  }
+  $('E-acc-owner').querySelector('span').textContent = '예금주명을 입력해 주세요.';
   if (digits(num) === TEST_CFG.fail_acc) { openDim('M-acc-fail'); return; }
   const email = $('I-email').value.trim();
   if (!email || !email.includes('@')) { setE('R-email','E-email',true); return; }
@@ -2406,6 +2411,7 @@ function doAuth() {
       email: S.email || '',
       status: '가입신청'
     });
+    DB_USERS.push({ name: S.nameKr, phone: digits(S.phone || '') });
     go('scr-complete');
   }, 900);
 }
@@ -2699,6 +2705,8 @@ function goBizShopNext() {
   S.bizShopAddrDetail = $('I-biz-shop-addr-detail') ? $('I-biz-shop-addr-detail').value : '';
   S.bizStartDate = startDate;
   S.bizShopPhone = $('I-biz-shop-phone').value;
+  S.bizRepNameKr = $('I-biz-rep-kr').value.trim();
+  S.bizShopName  = $('I-biz-shopname').value.trim();
   if (bizCoopSel === 'coop') {
     S.bizCoopName1 = $('I-biz-coop1').value.trim();
     S.bizCoopName2 = $('I-biz-coop2') ? $('I-biz-coop2').value.trim() : '';
@@ -2740,6 +2748,13 @@ function goBizAccNext() {
   if (!num) { setE('R-biz-acc-num', 'E-biz-acc-num', true); return; }
   const owner = $('I-biz-acc-owner').value.trim();
   if (!owner) { setE('R-biz-acc-owner', 'E-biz-acc-owner', true); return; }
+  const expectedName = S.isCorp ? S.bizShopName : S.bizRepNameKr;
+  if (expectedName && owner !== expectedName) {
+    const msg = S.isCorp ? '법인명과 예금주가 일치하지 않아요.' : '대표자명과 예금주가 일치하지 않아요.';
+    $('E-biz-acc-owner').querySelector('span').textContent = msg;
+    setE('R-biz-acc-owner', 'E-biz-acc-owner', true); return;
+  }
+  $('E-biz-acc-owner').querySelector('span').textContent = '예금주명을 입력해 주세요.';
   const email = $('I-biz-email').value.trim();
   if (!email || !email.includes('@')) { setE('R-biz-email', 'E-biz-email', true); return; }
   S.bizAccNum = num; S.bizAccOwner = owner; S.bizEmail = email;
@@ -2926,6 +2941,7 @@ function doBizAuth() {
       email: S.bizEmail || '',
       status: '가입신청'
     });
+    DB_USERS.push({ name: S.bizRepNameKr, phone: digits(S.bizSmsPhone || '') });
     setupBizComplete(); go('scr-biz-complete');
   }, 900);
 }

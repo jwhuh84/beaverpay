@@ -1878,7 +1878,11 @@ function doLogin() {
   // otp 단계: onOtpKey()에서 6자리 즉시 자동 검증 (정책서 DOC-06)
   if (lnPhase === 'input') {
     const user = DB_USERS.find(u => u.name===name && u.phone===phone);
-    if (!user) { openDim('M-nouser'); return; }
+    if (!user) {
+      toast('[디버그] DB:' + DB_USERS.length + '명 / 입력:' + name + '/' + phone + (DB_USERS.length ? ' / 첫번째:' + DB_USERS[0].name + '/' + DB_USERS[0].phone : ''));
+      setTimeout(function(){ openDim('M-nouser'); }, 3000);
+      return;
+    }
     lnSendOTP();
   }
 }

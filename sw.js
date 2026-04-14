@@ -1,4 +1,4 @@
-const CACHE = 'beaverpay-v1';
+const CACHE = 'beaverpay-v2';
 const FILES = ['/index_next.html'];
 
 self.addEventListener('install', e => {

@@ -1732,12 +1732,30 @@ let TEST_CFG = {
 };
 
 // 앱 로드 시 설정값 불러오기
+function jsonpFetch(url) {
+  return new Promise(function(resolve, reject) {
+    var cb = 'gasCb_' + Date.now();
+    var script = document.createElement('script');
+    window[cb] = function(data) {
+      resolve(data);
+      delete window[cb];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+    script.src = url + '&callback=' + cb;
+    script.onerror = function() {
+      reject(new Error('jsonp error'));
+      delete window[cb];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+    document.head.appendChild(script);
+  });
+}
+
 async function loadConfig() {
   try {
-    // 구글시트 가입자 목록 로드 → DB_USERS 갱신
+    // 구글시트 가입자 목록 로드 (JSONP → CORS 우회)
     try {
-      const uRes = await fetch(GAS_URL + '?action=getUsers');
-      const uJson = await uRes.json();
+      const uJson = await jsonpFetch(GAS_URL + '?action=getUsers');
       if (uJson.status === 'ok' && Array.isArray(uJson.users) && uJson.users.length > 0) {
         DB_USERS = uJson.users;
         localStorage.setItem('bp_users', JSON.stringify(DB_USERS));
